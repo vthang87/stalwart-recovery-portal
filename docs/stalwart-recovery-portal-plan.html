@@ -1,0 +1,149 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Stalwart Recovery Portal - Plan</title>
+<style>body{font-family:system-ui;max-width:1050px;margin:40px auto;padding:0 20px;line-height:1.6;color:#182033}h1,h2{color:#102a56}pre{background:#101827;color:#e5eefc;padding:18px;border-radius:10px;overflow:auto}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ccd4e0;padding:9px;text-align:left}.box{background:#eef5ff;padding:15px;border-left:4px solid #3976d3}code{background:#eef1f5;padding:2px 5px;border-radius:4px}</style></head><body>
+<h1>Stalwart Recovery Portal</h1>
+<p>Custom extension cho Stalwart, chỉ bổ sung recovery email, OTP và password recovery. Không xây lại các chức năng quản trị mail đã có trong Stalwart.</p>
+<div class="box"><b>Nguyên tắc:</b> Stalwart là source of truth cho principal, password, authentication, role và permission. SQLite chỉ lưu recovery metadata, OTP challenge và audit.</div>
+
+<h2>1. Scope</h2>
+<ul><li>User login qua Stalwart.</li><li>Add/change/verify recovery email.</li><li>Forgot Password → OTP → new password → update Stalwart.</li><li>Change Password cho user đã login.</li><li>Recovery Admin: tìm Stalwart principal, set recovery email, resend verification, revoke challenge, xem audit.</li><li>SMTP generic với tài khoản noreply.</li><li>Docker image độc lập.</li></ul>
+
+<h2>2. Không duplicate Stalwart</h2>
+<table><tr><th>Chức năng</th><th>Owner</th></tr><tr><td>User/Principal CRUD, Domains, Aliases, Groups, Quota</td><td>Stalwart</td></tr><tr><td>Password storage + Authentication</td><td>Stalwart</td></tr><tr><td>Roles / Permissions</td><td>Stalwart RBAC</td></tr><tr><td>Recovery Email / OTP / Recovery Audit</td><td>Recovery Portal</td></tr></table>
+
+<h2>3. Architecture</h2>
+<pre>Stalwart
+├── Principals
+├── Passwords
+├── Authentication
+├── Roles / Permissions
+└── SMTP
+      ▲       ▲
+      │ API   │ SMTP
+      │       │
+Recovery Portal (Next.js)
+├── User Portal
+├── Recovery Admin
+├── Stalwart Adapter
+├── SMTP Adapter
+├── OTP Service
+└── Drizzle ORM
+      │
+      ▼
+/data/recovery.db (SQLite)</pre>
+
+<h2>4. Auth & RBAC</h2>
+<p>Portal không có user/role database riêng. Login được authenticate bằng Stalwart. Backend resolve Stalwart principal và effective permissions. Normal user chỉ thao tác recovery của chính mình; admin/custom role có permission phù hợp mới được quản lý recovery của user khác. Không hard-code duy nhất <code>role === admin</code>.</p>
+
+<h2>5. Forgot Password</h2>
+<ol><li>User nhập account.</li><li>Backend resolve principal từ Stalwart.</li><li>Lookup recovery email verified trong SQLite.</li><li>Sinh OTP 6 số bằng CSPRNG và chỉ lưu hash.</li><li>Gửi OTP qua <code>noreply@domain.com</code>.</li><li>Verify OTP, TTL, attempts và one-time-use.</li><li>User nhập password mới.</li><li>Backend cập nhật password trong Stalwart.</li><li>Revoke challenge còn hiệu lực và ghi audit.</li></ol>
+<p>Public response phải generic để chống account enumeration.</p>
+
+<h2>6. Recovery Enrollment</h2>
+<pre>Logged-in User
+  → Enter recovery email
+  → Send verification OTP
+  → Verify OTP
+  → verified_at = now</pre>
+<p>Recovery email chưa verified không được dùng để reset password. Thay đổi địa chỉ phải xóa trạng thái verified cũ.</p>
+
+<h2>7. SQLite</h2>
+<p>Database: <code>/data/recovery.db</code>. Drizzle ORM. Bật WAL, foreign keys và busy timeout.</p>
+<pre>PRAGMA journal_mode = WAL;
+PRAGMA foreign_keys = ON;
+PRAGMA busy_timeout = 5000;</pre>
+<table><tr><th>Table</th><th>Fields chính</th></tr><tr><td>recovery_accounts</td><td>principal_id (unique), account_email cache, recovery_email, verified_at, timestamps</td></tr><tr><td>reset_challenges</td><td>principal_id, purpose, secret_hash, expires_at, attempts, used_at, request_ip</td></tr><tr><td>audit_logs</td><td>principal_id, actor_principal_id, action, result, IP, user_agent, created_at</td></tr></table>
+
+<h2>8. SMTP / noreply</h2>
+<pre>SMTP_HOST=stalwart
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_STARTTLS=true
+SMTP_USER=noreply@domain.com
+SMTP_PASSWORD=CHANGE_ME
+MAIL_FROM_NAME=Mail Recovery
+MAIL_FROM_ADDRESS=noreply@domain.com</pre>
+<p>Hỗ trợ SMTP chuẩn 25/465/587. Có Test Connection và Send Test Email. SMTP lỗi không làm container crash-loop.</p>
+
+<h2>9. API</h2>
+<pre>POST /api/auth/login
+POST /api/auth/logout
+GET  /api/auth/session
+
+GET  /api/me/recovery
+PUT  /api/me/recovery
+POST /api/me/recovery/send-verification
+POST /api/me/recovery/verify
+
+POST /api/password/forgot
+POST /api/password/verify
+POST /api/password/reset
+POST /api/password/change
+
+GET    /api/admin/principals/search
+GET    /api/admin/recovery/:principalId
+PUT    /api/admin/recovery/:principalId
+DELETE /api/admin/recovery/:principalId
+POST   /api/admin/recovery/:principalId/send-verification
+POST   /api/admin/recovery/:principalId/revoke-challenges
+GET    /api/admin/audit
+
+POST /api/admin/smtp/test
+GET  /api/health</pre>
+
+<h2>10. Security</h2>
+<ul><li>Không lưu password mailbox trong SQLite.</li><li>Không expose privileged Stalwart credential/token ra browser.</li><li>Integration credential dùng least privilege.</li><li>OTP dùng CSPRNG, chỉ lưu hash, TTL mặc định 15 phút, max 5 attempts.</li><li>Resend cooldown mặc định 60 giây và rate limit theo IP + account.</li><li>Session cookie HttpOnly/Secure/SameSite và CSRF protection.</li><li>Không log password, OTP plaintext, SMTP password hoặc Stalwart secret.</li><li>Production bắt buộc HTTPS.</li></ul>
+
+<h2>11. ENV</h2>
+<pre>APP_NAME=Stalwart Recovery Portal
+APP_URL=https://account.domain.com
+PORT=3000
+DATA_DIR=/data
+
+STALWART_URL=http://stalwart:8080
+STALWART_API_TOKEN=CHANGE_ME
+
+OTP_LENGTH=6
+OTP_TTL_MINUTES=15
+OTP_MAX_ATTEMPTS=5
+OTP_RESEND_COOLDOWN_SECONDS=60
+
+SMTP_HOST=stalwart
+SMTP_PORT=587
+SMTP_USER=noreply@domain.com
+SMTP_PASSWORD=CHANGE_ME
+MAIL_FROM_NAME=Mail Recovery
+MAIL_FROM_ADDRESS=noreply@domain.com</pre>
+
+<h2>12. Docker</h2>
+<pre>services:
+  stalwart-recovery:
+    image: ghcr.io/your-org/stalwart-recovery-portal:latest
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "3000:3000"
+    volumes:
+      - stalwart_recovery_data:/data
+    networks:
+      - mail-network
+
+volumes:
+  stalwart_recovery_data:
+
+networks:
+  mail-network:
+    external: true</pre>
+<p>Next.js standalone multi-stage build, runtime non-root. SQLite persist trong Docker volume.</p>
+
+<h2>13. UI</h2>
+<ul><li><code>/login</code> — Stalwart-backed login</li><li><code>/account</code> — recovery/security overview</li><li><code>/account/recovery</code> — add/change/verify recovery email</li><li><code>/account/password</code> — change password</li><li><code>/forgot-password</code> → <code>/verify</code> → <code>/reset-password</code></li><li><code>/admin/recovery</code> — recovery management only</li><li><code>/admin/audit</code> — audit</li><li><code>/admin/settings</code> — SMTP test/diagnostics</li></ul>
+
+<h2>14. Implementation</h2>
+<ol><li>Next.js + Docker standalone + Drizzle/SQLite.</li><li>Stalwart adapter: auth, principal lookup, authorization, password update.</li><li>Session middleware.</li><li>SMTP adapter + noreply.</li><li>Recovery enrollment + verification.</li><li>Forgot Password + OTP + reset.</li><li>Change Password.</li><li>Recovery Admin + Stalwart permission checks.</li><li>Audit, rate limit, security hardening.</li><li>Health checks + Compose + GitHub Actions/GHCR.</li></ol>
+
+<h2>15. Acceptance Criteria</h2>
+<ul><li>User/password/role không duplicate khỏi Stalwart.</li><li>Stalwart kiểm soát authentication và authorization.</li><li>Recovery email phải verified trước khi reset.</li><li>OTP one-time, expiring, attempt-limited, rate-limited.</li><li>Password reset end-to-end cập nhật password thật trong Stalwart.</li><li>Admin chỉ quản lý recovery workflow.</li><li>SQLite persist qua container restart/update.</li><li>Một Docker image tái sử dụng được cho server/domain khác bằng ENV.</li></ul>
+
+<h2>16. Definition of Done</h2>
+<p>V1 hoàn tất khi flow <b>enroll recovery → verify → forgot password → OTP → reset password trên Stalwart</b> chạy end-to-end qua HTTPS, dữ liệu SQLite persist, SMTP noreply hoạt động, authorization lấy từ Stalwart và portal không duplicate chức năng mail-admin lõi.</p>
+</body></html>
