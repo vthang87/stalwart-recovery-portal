@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { appPath } from "@/lib/base-path";
 import { postJson } from "@/lib/client";
 
 type Principal = {
@@ -47,7 +48,7 @@ export function AdminRecovery({ csrf }: { csrf: string }) {
         disabled={pending}
         onClick={() =>
           void run(async () => {
-            const res = await fetch(`/api/admin/principals/search?q=${encodeURIComponent(query)}`, {
+            const res = await fetch(appPath(`/api/admin/principals/search?q=${encodeURIComponent(query)}`), {
               headers: { "x-csrf-token": csrf },
             });
             const data = (await res.json()) as { principals?: Principal[]; error?: string };

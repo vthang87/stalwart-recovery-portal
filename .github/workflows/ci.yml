@@ -36,6 +36,8 @@ jobs:
         with:
           context: .
           push: true
+          build-args: |
+            BASE_PATH=/account
           tags: |
             ghcr.io/vthang87/stalwart-recovery-portal:latest
             ghcr.io/vthang87/stalwart-recovery-portal:${{ github.sha }}

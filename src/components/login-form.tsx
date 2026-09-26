@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { loadCsrf, postJson } from "@/lib/client";
 
@@ -22,7 +23,7 @@ export function LoginForm() {
     setError("");
     try {
       await postJson("/api/auth/login", csrf, { account, password });
-      router.push("/account");
+      router.push("/");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Đăng nhập thất bại");
@@ -44,7 +45,7 @@ export function LoginForm() {
         {pending ? "Đang đăng nhập…" : "Đăng nhập"}
       </button>
       <p className="lede">
-        <a href="/forgot-password">Quên mật khẩu</a>
+        <Link href="/forgot-password">Quên mật khẩu</Link>
       </p>
     </form>
   );

@@ -70,7 +70,7 @@ export function cookieBase(maxAge: number): CookieOptions {
     httpOnly: true,
     secure: getEnv().appUrl.startsWith("https://"),
     sameSite: "lax",
-    path: "/",
+    path: getEnv().basePath || "/",
     maxAge,
   };
 }
@@ -96,7 +96,7 @@ export async function requireSession(): Promise<Session> {
 
 export async function requireAdminSession(): Promise<Session> {
   const session = await requireSession();
-  if (!hasRecoveryAdminAccess(session.permissions)) redirect("/account");
+  if (!hasRecoveryAdminAccess(session.permissions)) redirect("/");
   return session;
 }
 

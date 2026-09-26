@@ -16,7 +16,23 @@ Image: `ghcr.io/vthang87/stalwart-recovery-portal:latest`
 
 SQLite nằm trong volume `stalwart_recovery_data`, mount tại `/data` trong container (`DATA_DIR=/data`). Giữ volume này khi cập nhật image.
 
-Health check: `GET /api/health`.
+Image được build sẵn với `BASE_PATH=/account`. Người dùng mở portal tại `https://mail.domain.com/account`.
+
+| Đường dẫn | Trang |
+| --- | --- |
+| `/account/login` | Đăng nhập |
+| `/account` | Tổng quan tài khoản |
+| `/account/recovery` | Email khôi phục |
+| `/account/password` | Đổi mật khẩu |
+| `/account/forgot-password` | Quên mật khẩu |
+| `/account/verify` | Nhập OTP |
+| `/account/reset-password` | Đặt mật khẩu mới |
+| `/account/admin/recovery` | Quản trị khôi phục |
+| `/account/admin/audit` | Nhật ký |
+| `/account/admin/settings` | Kiểm tra SMTP |
+| `/account/api/health` | Health check |
+
+Reverse proxy gửi prefix `/account` tới portal. Bulwark giữ prefix riêng của nó, thường là `/webmail`, nên hai bên không dùng chung đường dẫn. Nếu cùng host với listener HTTP của Stalwart, đừng để Stalwart nhận `/account`: Account Manager của Stalwart cũng mount tại prefix đó.
 
 ## Biến môi trường
 
@@ -27,7 +43,8 @@ Copy từ [`.env.example`](.env.example).
 | Biến | Ý nghĩa |
 | --- | --- |
 | `APP_NAME` | Tên hiển thị trên giao diện. |
-| `APP_URL` | URL public của portal, không có dấu `/` cuối. Phải là `https://` khi chạy production để cookie session bật `Secure`. |
+| `APP_URL` | Origin public, không có dấu `/` cuối và không gồm `BASE_PATH`. Ví dụ `https://mail.domain.com`. Phải là `https://` khi chạy production để cookie session bật `Secure`. |
+| `BASE_PATH` | Tiền tố đường dẫn. Image mặc định là `/account`, nên người dùng mở `https://mail.domain.com/account/login`. Để trống nếu phục vụ ở gốc domain. Giá trị được gắn lúc build image; runtime phải trùng giá trị đã build. |
 | `PORT` | Cổng trong container. Mặc định `3000`. |
 | `DATA_DIR` | Thư mục chứa `recovery.db`. Trong Docker để `/data`. |
 | `SESSION_SECRET` | Chuỗi ngẫu nhiên dài, dùng để mã hóa session cookie và hash OTP. Bắt buộc khi `NODE_ENV=production`. Đổi secret sẽ đăng xuất mọi phiên hiện có. |
@@ -81,13 +98,14 @@ Portal chỉ lưu HMAC của OTP. Email khôi phục chưa xác minh không đư
 | `MAIL_FROM_NAME` | Tên hiển thị người gửi. |
 | `MAIL_FROM_ADDRESS` | Địa chỉ From, thường trùng `SMTP_USER`. |
 
-Tài khoản noreply là mailbox Stalwart bình thường, dùng để gửi OTP. Lỗi SMTP không làm container thoát. Sau khi portal chạy, đăng nhập bằng tài khoản có quyền admin recovery rồi vào `/admin/settings` để kiểm tra kết nối và gửi thư thử.
+Tài khoản noreply là mailbox Stalwart bình thường, dùng để gửi OTP. Lỗi SMTP không làm container thoát. Sau khi portal chạy, đăng nhập bằng tài khoản có quyền admin recovery rồi vào `/account/admin/settings` để kiểm tra kết nối và gửi thư thử.
 
 ## Ví dụ `.env`
 
 ```env
 APP_NAME=Stalwart Recovery Portal
-APP_URL=https://account.domain.com
+APP_URL=https://mail.domain.com
+BASE_PATH=/account
 PORT=3000
 DATA_DIR=/data
 SESSION_SECRET=thay-bang-chuoi-ngau-nhien
@@ -112,7 +130,7 @@ MAIL_FROM_NAME=Mail Recovery
 MAIL_FROM_ADDRESS=noreply@domain.com
 ```
 
-Đặt reverse proxy HTTPS phía trước cổng 3000. `APP_URL` phải trùng URL người dùng mở trên trình duyệt.
+Đặt reverse proxy HTTPS phía trước cổng 3000 và chuyển `/account` vào portal. `APP_URL` là origin, ví dụ `https://mail.domain.com`, không kèm `/account`.
 
 ## Chạy local
 

@@ -1,9 +1,11 @@
+import Link from "next/link";
+
 export function AdminNav() {
   return (
     <nav className="subnav">
-      <a href="/admin/recovery">Khôi phục</a>
-      <a href="/admin/audit">Nhật ký</a>
-      <a href="/admin/settings">SMTP</a>
+      <Link href="/admin/recovery">Khôi phục</Link>
+      <Link href="/admin/audit">Nhật ký</Link>
+      <Link href="/admin/settings">SMTP</Link>
     </nav>
   );
 }

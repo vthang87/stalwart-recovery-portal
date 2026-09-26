@@ -1,6 +1,9 @@
+import { normalizeBasePath } from "@/lib/base-path";
+
 export type Env = {
   appName: string;
   appUrl: string;
+  basePath: string;
   port: number;
   dataDir: string;
   sessionSecret: string;
@@ -45,6 +48,7 @@ export function getEnv(): Env {
   cached = {
     appName: process.env.APP_NAME || "Stalwart Recovery Portal",
     appUrl: (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, ""),
+    basePath: normalizeBasePath(process.env.BASE_PATH),
     port: num(process.env.PORT, 3000),
     dataDir: process.env.DATA_DIR || "./data",
     sessionSecret,

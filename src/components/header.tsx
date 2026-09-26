@@ -1,31 +1,33 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { appPath } from "@/lib/base-path";
 
 export function Header({ appName, email, isAdmin }: { appName: string; email?: string; isAdmin: boolean }) {
   const router = useRouter();
   async function logout() {
-    await fetch("/api/auth/logout", { method: "POST" });
+    await fetch(appPath("/api/auth/logout"), { method: "POST" });
     router.push("/login");
     router.refresh();
   }
   return (
     <header className="topbar">
-      <a className="brand" href={email ? "/account" : "/login"}>
+      <Link className="brand" href={email ? "/" : "/login"}>
         {appName}
-      </a>
+      </Link>
       <nav className="nav">
         {email ? (
           <>
-            <a href="/account">Tài khoản</a>
-            {isAdmin ? <a href="/admin/recovery">Quản trị</a> : null}
+            <Link href="/">Tài khoản</Link>
+            {isAdmin ? <Link href="/admin/recovery">Quản trị</Link> : null}
             <span>{email}</span>
             <button type="button" onClick={logout}>
               Đăng xuất
             </button>
           </>
         ) : (
-          <a href="/login">Đăng nhập</a>
+          <Link href="/login">Đăng nhập</Link>
         )}
       </nav>
     </header>
