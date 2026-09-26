@@ -6,6 +6,7 @@ import { AppError, FORGOT_MESSAGE, OTP_INVALID_MESSAGE, isEmail, validateNewPass
 import type { Mailer } from "@/server/mailer";
 import { generateOtp, hashOtp, newId, otpMatches } from "@/server/otp";
 import { isRateLimited } from "@/server/rate-limit";
+import { compactSessionPermissions } from "@/server/authz";
 import {
   authenticate,
   changeOwnPassword,
@@ -478,5 +479,5 @@ export async function loginAccount(
     userAgent: input.userAgent,
     now,
   });
-  return { principal, permissions: auth.permissions };
+  return { principal, permissions: compactSessionPermissions(auth.permissions) };
 }
