@@ -4,12 +4,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { loadCsrf, postJson } from "@/lib/client";
+import { Turnstile } from "@/components/turnstile";
 
-export function LoginForm() {
+export function LoginForm({ siteKey }: { siteKey: string }) {
   const router = useRouter();
   const [csrf, setCsrf] = useState("");
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [resetSignal, setResetSignal] = useState(0);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 
@@ -22,10 +25,12 @@ export function LoginForm() {
     setPending(true);
     setError("");
     try {
-      await postJson("/api/auth/login", csrf, { account, password });
+      await postJson("/api/auth/login", csrf, { account, password, turnstileToken });
       router.push("/");
       router.refresh();
     } catch (err) {
+      setTurnstileToken("");
+      setResetSignal((value) => value + 1);
       setError(err instanceof Error ? err.message : "Đăng nhập thất bại");
     } finally {
       setPending(false);
@@ -41,7 +46,8 @@ export function LoginForm() {
       <input id="account" autoComplete="username" value={account} onChange={(e) => setAccount(e.target.value)} required />
       <label htmlFor="password">Mật khẩu</label>
       <input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-      <button className="primary" disabled={pending || !csrf} type="submit">
+      <Turnstile siteKey={siteKey} resetSignal={resetSignal} onToken={setTurnstileToken} />
+      <button className="primary" disabled={pending || !csrf || (Boolean(siteKey) && !turnstileToken)} type="submit">
         {pending ? "Đang đăng nhập…" : "Đăng nhập"}
       </button>
       <p className="lede">

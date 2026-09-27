@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Turnstile } from "@/components/turnstile";
 import { loadCsrf, postJson } from "@/lib/client";
 
-export function ForgotForm() {
+export function ForgotForm({ siteKey }: { siteKey: string }) {
   const router = useRouter();
   const [csrf, setCsrf] = useState("");
   const [account, setAccount] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [resetSignal, setResetSignal] = useState(0);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
@@ -21,10 +24,12 @@ export function ForgotForm() {
     setPending(true);
     setError("");
     try {
-      const data = await postJson("/api/password/forgot", csrf, { account });
+      const data = await postJson("/api/password/forgot", csrf, { account, turnstileToken });
       setMessage(data.message || "Nếu tài khoản có email khôi phục đã xác minh, chúng tôi đã gửi mã OTP.");
       router.push(`/verify?account=${encodeURIComponent(account)}`);
     } catch (err) {
+      setTurnstileToken("");
+      setResetSignal((value) => value + 1);
       setError(err instanceof Error ? err.message : "Không gửi được yêu cầu");
     } finally {
       setPending(false);
@@ -39,7 +44,8 @@ export function ForgotForm() {
       {message ? <div className="alert ok">{message}</div> : null}
       <label htmlFor="account">Tài khoản</label>
       <input id="account" autoComplete="username" value={account} onChange={(e) => setAccount(e.target.value)} required />
-      <button className="primary" disabled={pending || !csrf} type="submit">
+      <Turnstile siteKey={siteKey} resetSignal={resetSignal} onToken={setTurnstileToken} />
+      <button className="primary" disabled={pending || !csrf || (Boolean(siteKey) && !turnstileToken)} type="submit">
         Gửi mã OTP
       </button>
     </form>

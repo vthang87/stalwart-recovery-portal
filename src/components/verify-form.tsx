@@ -3,14 +3,17 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { Turnstile } from "@/components/turnstile";
 import { loadCsrf, postJson } from "@/lib/client";
 
-function VerifyInner() {
+function VerifyInner({ siteKey }: { siteKey: string }) {
   const params = useSearchParams();
   const router = useRouter();
   const [csrf, setCsrf] = useState("");
   const [account, setAccount] = useState(params.get("account") || "");
   const [code, setCode] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [resetSignal, setResetSignal] = useState(0);
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 
@@ -23,9 +26,11 @@ function VerifyInner() {
     setPending(true);
     setError("");
     try {
-      await postJson("/api/password/verify", csrf, { account, code });
+      await postJson("/api/password/verify", csrf, { account, code, turnstileToken });
       router.push("/reset-password");
     } catch (err) {
+      setTurnstileToken("");
+      setResetSignal((value) => value + 1);
       setError(err instanceof Error ? err.message : "Mã không hợp lệ");
     } finally {
       setPending(false);
@@ -41,17 +46,18 @@ function VerifyInner() {
       <input id="account" value={account} onChange={(e) => setAccount(e.target.value)} required />
       <label htmlFor="code">Mã OTP</label>
       <input id="code" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} required />
-      <button className="primary" disabled={pending || !csrf} type="submit">
+      <Turnstile siteKey={siteKey} resetSignal={resetSignal} onToken={setTurnstileToken} />
+      <button className="primary" disabled={pending || !csrf || (Boolean(siteKey) && !turnstileToken)} type="submit">
         Xác minh
       </button>
     </form>
   );
 }
 
-export function VerifyForm() {
+export function VerifyForm({ siteKey }: { siteKey: string }) {
   return (
     <Suspense>
-      <VerifyInner />
+      <VerifyInner siteKey={siteKey} />
     </Suspense>
   );
 }

@@ -82,6 +82,7 @@ button.secondary {
   cursor: pointer;
 }
 button:disabled { opacity: 0.6; cursor: wait; }
+.turnstile { margin-top: 16px; }
 .alert { border-radius: 12px; padding: 12px 14px; margin: 0 0 12px; }
 .alert.error { background: #fdecec; color: var(--danger); }
 .alert.ok { background: #e8f6ee; color: var(--ok); }

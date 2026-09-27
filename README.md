@@ -48,12 +48,16 @@ Copy từ [`.env.example`](.env.example).
 | `PORT` | Cổng trong container. Mặc định `3000`. |
 | `DATA_DIR` | Thư mục chứa `recovery.db`. Trong Docker để `/data`. |
 | `SESSION_SECRET` | Chuỗi ngẫu nhiên dài, dùng để mã hóa session cookie và hash OTP. Bắt buộc khi `NODE_ENV=production`. Đổi secret sẽ đăng xuất mọi phiên hiện có. |
+| `TURNSTILE_SITE_KEY` | Site key của Cloudflare Turnstile. Hiện trên trình duyệt. |
+| `TURNSTILE_SECRET_KEY` | Secret key của Turnstile. Chỉ dùng ở server khi gọi `siteverify`. |
 
 Tạo secret:
 
 ```bash
 openssl rand -base64 48
 ```
+
+Cloudflare Turnstile bảo vệ đăng nhập, quên mật khẩu, nhập OTP và đặt mật khẩu mới. Tạo widget tại Cloudflare Dashboard → Turnstile, thêm hostname của `APP_URL`, rồi điền site key và secret key. Production bắt buộc có cả hai key. Máy dev bỏ trống cả hai thì portal bỏ qua bước này.
 
 ### Stalwart
 
@@ -128,6 +132,8 @@ SMTP_USER=noreply@domain.com
 SMTP_PASSWORD=thay-bang-mat-khau-noreply
 MAIL_FROM_NAME=Mail Recovery
 MAIL_FROM_ADDRESS=noreply@domain.com
+TURNSTILE_SITE_KEY=
+TURNSTILE_SECRET_KEY=
 ```
 
 Đặt reverse proxy HTTPS phía trước cổng 3000 và chuyển `/account` vào portal. `APP_URL` là origin, ví dụ `https://mail.domain.com`, không kèm `/account`.

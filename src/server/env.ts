@@ -25,6 +25,8 @@ export type Env = {
   };
   mailFromName: string;
   mailFromAddress: string;
+  turnstileSiteKey: string;
+  turnstileSecretKey: string;
 };
 
 let cached: Env | null = null;
@@ -73,6 +75,8 @@ export function getEnv(): Env {
     },
     mailFromName: process.env.MAIL_FROM_NAME || "Mail Recovery",
     mailFromAddress: process.env.MAIL_FROM_ADDRESS || "noreply@domain.com",
+    turnstileSiteKey: process.env.TURNSTILE_SITE_KEY || "",
+    turnstileSecretKey: process.env.TURNSTILE_SECRET_KEY || "",
   };
   return cached;
 }
