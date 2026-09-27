@@ -7,7 +7,8 @@ import { appPath } from "@/lib/base-path";
 export function Header({ appName, email, isAdmin }: { appName: string; email?: string; isAdmin: boolean }) {
   const router = useRouter();
   async function logout() {
-    await fetch(appPath("/api/auth/logout"), { method: "POST" });
+    const res = await fetch(appPath("/api/auth/logout"), { method: "POST", credentials: "same-origin", cache: "no-store" });
+    if (!res.ok) return;
     router.push("/login");
     router.refresh();
   }

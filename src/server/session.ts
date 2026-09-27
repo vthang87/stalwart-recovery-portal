@@ -70,9 +70,23 @@ export function cookieBase(maxAge: number): CookieOptions {
     httpOnly: true,
     secure: getEnv().appUrl.startsWith("https://"),
     sameSite: "lax",
-    path: "/",
+    path: getEnv().basePath || "/",
     maxAge,
   };
+}
+
+export function expiredSetCookies(name: string, secure: boolean) {
+  const path = getEnv().basePath || "/";
+  const parts = [
+    `${name}=`,
+    `Path=${path}`,
+    "Max-Age=0",
+    "Expires=Thu, 01 Jan 1970 00:00:00 GMT",
+    "HttpOnly",
+    "SameSite=Lax",
+  ];
+  if (secure) parts.push("Secure");
+  return [parts.join("; ")];
 }
 
 export async function readCookie(name: string) {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { writeAudit } from "@/server/audit";
 import { getDb } from "@/server/db";
-import { RESET_COOKIE, SESSION_COOKIE, clearCookie, getSession, handle, meta } from "@/server/route";
+import { RESET_COOKIE, SESSION_COOKIE, expireCookie, getSession, handle, meta } from "@/server/route";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +20,9 @@ export async function POST(req: Request) {
         now: Date.now(),
       });
     }
-    await clearCookie(SESSION_COOKIE);
-    await clearCookie(RESET_COOKIE);
-    return NextResponse.json({ ok: true });
+    const res = NextResponse.json({ ok: true });
+    expireCookie(res, SESSION_COOKIE);
+    expireCookie(res, RESET_COOKIE);
+    return res;
   });
 }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { AppError } from "@/server/http";
 import { completeReset } from "@/server/portal";
 import { verifyTurnstile } from "@/server/turnstile";
-import { RESET_COOKIE, clearCookie, deps, handle, meta, readResetGrant, requireAnonymousCsrf } from "@/server/route";
+import { RESET_COOKIE, deps, expireCookie, handle, meta, readResetGrant, requireAnonymousCsrf } from "@/server/route";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +21,8 @@ export async function POST(req: Request) {
       password: body.password,
       ...info,
     });
-    await clearCookie(RESET_COOKIE);
-    return NextResponse.json({ ok: true });
+    const res = NextResponse.json({ ok: true });
+    expireCookie(res, RESET_COOKIE);
+    return res;
   });
 }

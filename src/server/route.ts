@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { hasRecoveryAdminAccess } from "@/server/authz";
 import { getDb } from "@/server/db";
+import { getEnv } from "@/server/env";
 import { AppError, clientIp, logError } from "@/server/http";
 import { createMailer } from "@/server/mailer";
 import { defaultDeps, type PortalDeps } from "@/server/portal";
@@ -15,6 +16,7 @@ import {
   newCsrf,
   open,
   readCookie,
+  expiredSetCookies,
   matchingAnonymousCsrf,
   seal,
   type ResetGrant,
@@ -69,9 +71,11 @@ export async function setCookie(name: string, value: string, maxAge: number) {
   jar.set(name, value, cookieBase(maxAge));
 }
 
-export async function clearCookie(name: string) {
-  const jar = await cookies();
-  jar.set(name, "", { ...cookieBase(0), maxAge: 0 });
+export function expireCookie(res: NextResponse, name: string) {
+  for (const header of expiredSetCookies(name, getEnv().appUrl.startsWith("https://"))) {
+    res.headers.append("set-cookie", header);
+  }
+  return res;
 }
 
 export function sessionToken(session: Omit<Session, "csrf" | "exp"> & { csrf?: string }, ttlMs = 12 * 60 * 60 * 1000) {
