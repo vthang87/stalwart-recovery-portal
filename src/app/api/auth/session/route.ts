@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { hasRecoveryAdminAccess } from "@/server/authz";
 import { getEnv } from "@/server/env";
-import { CSRF_COOKIE, getSession, handle, newCsrf, seal, setCookie } from "@/server/route";
+import { CSRF_COOKIE, getSession, handle, newCsrf, open, readCookie, seal, setCookie } from "@/server/route";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +18,11 @@ export async function GET() {
         appName: getEnv().appName,
       });
     }
-    const csrf = newCsrf();
-    await setCookie(CSRF_COOKIE, seal({ csrf, exp: Date.now() + 60 * 60 * 1000 }), 60 * 60);
+    const existing = await readCookie(CSRF_COOKIE);
+    const current = existing ? open<{ csrf: string; exp: number }>(existing) : null;
+    const csrf = current && current.exp > Date.now() ? current.csrf : newCsrf();
+    const exp = current && current.exp > Date.now() ? current.exp : Date.now() + 60 * 60 * 1000;
+    await setCookie(CSRF_COOKIE, seal({ csrf, exp }), Math.max(1, Math.ceil((exp - Date.now()) / 1000)));
     return NextResponse.json({ authenticated: false, csrf, appName: getEnv().appName });
   });
 }

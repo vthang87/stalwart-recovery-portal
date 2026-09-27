@@ -70,7 +70,7 @@ export function cookieBase(maxAge: number): CookieOptions {
     httpOnly: true,
     secure: getEnv().appUrl.startsWith("https://"),
     sameSite: "lax",
-    path: getEnv().basePath || "/",
+    path: "/",
     maxAge,
   };
 }
@@ -98,6 +98,33 @@ export async function requireAdminSession(): Promise<Session> {
   const session = await requireSession();
   if (!hasRecoveryAdminAccess(session.permissions)) redirect("/");
   return session;
+}
+
+export function cookieValues(header: string | null, name: string) {
+  if (!header) return [];
+  const values: string[] = [];
+  for (const part of header.split(";")) {
+    const eq = part.indexOf("=");
+    if (eq < 0) continue;
+    if (part.slice(0, eq).trim() !== name) continue;
+    const raw = part.slice(eq + 1).trim();
+    try {
+      values.push(decodeURIComponent(raw));
+    } catch {
+      values.push(raw);
+    }
+  }
+  return values;
+}
+
+export function matchingAnonymousCsrf(cookieHeader: string | null, headerToken: string, now = Date.now()) {
+  if (!headerToken) return null;
+  for (const raw of cookieValues(cookieHeader, CSRF_COOKIE)) {
+    const token = open<{ csrf: string; exp: number }>(raw);
+    if (!token || token.exp < now) continue;
+    if (tokensMatch(token.csrf, headerToken)) return token.csrf;
+  }
+  return null;
 }
 
 export function assertCsrf(expected: string, req: Request) {

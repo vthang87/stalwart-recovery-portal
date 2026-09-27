@@ -2,9 +2,11 @@
 
 import { appPath } from "@/lib/base-path";
 
-export async function postJson(url: string, csrf: string, body?: unknown, method = "POST") {
+async function sendJson(url: string, csrf: string, body: unknown, method: string) {
   const res = await fetch(appPath(url), {
     method,
+    credentials: "same-origin",
+    cache: "no-store",
     headers: { "content-type": "application/json", "x-csrf-token": csrf },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
@@ -13,8 +15,17 @@ export async function postJson(url: string, csrf: string, body?: unknown, method
   return data;
 }
 
+export async function postJson(url: string, csrf: string, body?: unknown, method = "POST") {
+  try {
+    return await sendJson(url, csrf, body, method);
+  } catch (err) {
+    if (!(err instanceof Error) || err.message !== "Invalid CSRF") throw err;
+    return sendJson(url, await loadCsrf(), body, method);
+  }
+}
+
 export async function loadCsrf() {
-  const res = await fetch(appPath("/api/auth/session"));
+  const res = await fetch(appPath("/api/auth/session"), { cache: "no-store", credentials: "same-origin" });
   const data = (await res.json()) as { csrf: string; authenticated: boolean };
   return data.csrf;
 }

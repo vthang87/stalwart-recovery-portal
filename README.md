@@ -89,6 +89,14 @@ Tạo key trong Stalwart: Account → Credentials → API Keys. Gán key cho m�
 
 Portal chỉ lưu HMAC của OTP. Email khôi phục chưa xác minh không được dùng để đặt lại mật khẩu.
 
+### Mật khẩu
+
+| Biến | Mặc định | Ý nghĩa |
+| --- | --- | --- |
+| `PASSWORD_MIN_LENGTH` | `8` | Số ký tự tối thiểu khi đổi hoặc đặt lại mật khẩu. Giá trị không hợp lệ thì dùng 8. Tối đa vẫn là 256. |
+
+Stalwart vẫn có thể từ chối mật khẩu nếu chính sách trên máy chủ thư chặt hơn mức này.
+
 ### SMTP noreply
 
 | Biến | Ý nghĩa |
@@ -120,6 +128,7 @@ STALWART_OAUTH_CLIENT_ID=stalwart-recovery-portal
 RECOVERY_ADMIN_PERMISSIONS=sysAccountQuery
 
 OTP_LENGTH=6
+PASSWORD_MIN_LENGTH=8
 OTP_TTL_MINUTES=15
 OTP_MAX_ATTEMPTS=5
 OTP_RESEND_COOLDOWN_SECONDS=60

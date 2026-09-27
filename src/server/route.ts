@@ -15,6 +15,7 @@ import {
   newCsrf,
   open,
   readCookie,
+  matchingAnonymousCsrf,
   seal,
   type ResetGrant,
   type Session,
@@ -24,13 +25,18 @@ export function deps(): PortalDeps {
   return defaultDeps(getDb(), createMailer());
 }
 
+function noStore(res: NextResponse) {
+  res.headers.set("cache-control", "private, no-store");
+  return res;
+}
+
 export async function handle(fn: () => Promise<NextResponse>) {
   try {
-    return await fn();
+    return noStore(await fn());
   } catch (err) {
-    if (err instanceof AppError) return NextResponse.json({ error: err.message }, { status: err.status });
+    if (err instanceof AppError) return noStore(NextResponse.json({ error: err.message }, { status: err.status }));
     logError("api", err);
-    return NextResponse.json({ error: "Something went wrong. Try again later." }, { status: 500 });
+    return noStore(NextResponse.json({ error: "Something went wrong. Try again later." }, { status: 500 }));
   }
 }
 
@@ -48,6 +54,9 @@ export async function requireAdmin(req: Request) {
 }
 
 export async function requireAnonymousCsrf(req: Request) {
+  const header = req.headers.get("x-csrf-token") || "";
+  const matched = matchingAnonymousCsrf(req.headers.get("cookie"), header);
+  if (matched) return matched;
   const raw = await readCookie(CSRF_COOKIE);
   const token = raw ? open<{ csrf: string; exp: number }>(raw) : null;
   if (!token || token.exp < Date.now()) throw new AppError(403, "Invalid CSRF");
@@ -83,4 +92,4 @@ export function meta(req: Request) {
   return { ip: clientIp(req), userAgent: req.headers.get("user-agent") || "" };
 }
 
-export { CSRF_COOKIE, RESET_COOKIE, SESSION_COOKIE, getSession, seal, newCsrf };
+export { CSRF_COOKIE, RESET_COOKIE, SESSION_COOKIE, getSession, open, readCookie, seal, newCsrf };

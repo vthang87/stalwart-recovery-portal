@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { postJson } from "@/lib/client";
 
-export function PasswordForm({ csrf }: { csrf: string }) {
+export function PasswordForm({ csrf, minLength }: { csrf: string; minLength: number }) {
   const [currentPassword, setCurrent] = useState("");
   const [nextPassword, setNext] = useState("");
   const [error, setError] = useState("");
@@ -36,7 +36,7 @@ export function PasswordForm({ csrf }: { csrf: string }) {
       <label htmlFor="current">Current password</label>
       <input id="current" type="password" autoComplete="current-password" value={currentPassword} onChange={(e) => setCurrent(e.target.value)} required />
       <label htmlFor="next">New password</label>
-      <input id="next" type="password" autoComplete="new-password" value={nextPassword} onChange={(e) => setNext(e.target.value)} required minLength={12} />
+      <input id="next" type="password" autoComplete="new-password" value={nextPassword} onChange={(e) => setNext(e.target.value)} required minLength={minLength} />
       <button className="primary" disabled={pending} type="submit">
         {pending ? "Updating…" : "Change password"}
       </button>

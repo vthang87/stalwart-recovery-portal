@@ -12,6 +12,7 @@ export type Env = {
   stalwartOAuthClientId: string;
   adminPermissions: string[];
   otpLength: number;
+  passwordMinLength: number;
   otpTtlMinutes: number;
   otpMaxAttempts: number;
   otpResendCooldownSeconds: number;
@@ -34,6 +35,12 @@ let cached: Env | null = null;
 function num(value: string | undefined, fallback: number) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function passwordMinLength(value: string | undefined) {
+  const parsed = Number(value);
+  if (!value || !Number.isInteger(parsed) || parsed < 1 || parsed > 256) return 8;
+  return parsed;
 }
 
 function bool(value: string | undefined, fallback: boolean) {
@@ -62,6 +69,7 @@ export function getEnv(): Env {
       .map((item) => item.trim())
       .filter(Boolean),
     otpLength: num(process.env.OTP_LENGTH, 6),
+    passwordMinLength: passwordMinLength(process.env.PASSWORD_MIN_LENGTH),
     otpTtlMinutes: num(process.env.OTP_TTL_MINUTES, 15),
     otpMaxAttempts: num(process.env.OTP_MAX_ATTEMPTS, 5),
     otpResendCooldownSeconds: num(process.env.OTP_RESEND_COOLDOWN_SECONDS, 60),

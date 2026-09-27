@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Turnstile } from "@/components/turnstile";
 import { loadCsrf, postJson } from "@/lib/client";
 
-export function ResetForm({ siteKey }: { siteKey: string }) {
+export function ResetForm({ siteKey, minLength }: { siteKey: string; minLength: number }) {
   const router = useRouter();
   const [csrf, setCsrf] = useState("");
   const [password, setPassword] = useState("");
@@ -45,7 +45,7 @@ export function ResetForm({ siteKey }: { siteKey: string }) {
       <p className="lede">The password is updated on Stalwart. Sign in again afterward.</p>
       {error ? <div className="alert error">{error}</div> : null}
       <label htmlFor="password">New password</label>
-      <input id="password" type="password" autoComplete="new-password" minLength={12} value={password} onChange={(e) => setPassword(e.target.value)} required />
+      <input id="password" type="password" autoComplete="new-password" minLength={minLength} value={password} onChange={(e) => setPassword(e.target.value)} required />
       <label htmlFor="confirm">Confirm</label>
       <input id="confirm" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
       <Turnstile siteKey={siteKey} resetSignal={resetSignal} onToken={setTurnstileToken} />

@@ -1,3 +1,5 @@
+import { getEnv } from "@/server/env";
+
 export const FORGOT_MESSAGE =
   "If this account has a verified recovery email, we sent an OTP.";
 
@@ -22,7 +24,8 @@ export function isEmail(value: string) {
 }
 
 export function validateNewPassword(password: string): string | null {
-  if (password.length < 12) return "New password must be at least 12 characters.";
+  const min = getEnv().passwordMinLength;
+  if (password.length < min) return `New password must be at least ${min} characters.`;
   if (password.length > 256) return "Password is too long.";
   return null;
 }
