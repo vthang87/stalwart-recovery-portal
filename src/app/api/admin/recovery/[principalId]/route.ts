@@ -32,9 +32,10 @@ export async function PUT(req: Request, ctx: Ctx) {
       accountEmail: body.accountEmail || getRecovery(deps().db, principalId)?.accountEmail || principalId,
       recoveryEmail: body.recoveryEmail || "",
       actorPrincipalId: session.principalId,
+      markVerified: true,
       ...meta(req),
     });
-    return NextResponse.json({ recoveryEmail: row?.recoveryEmail ?? null, verified: false });
+    return NextResponse.json({ recoveryEmail: row?.recoveryEmail ?? null, verified: Boolean(row?.verifiedAt) });
   });
 }
 

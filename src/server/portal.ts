@@ -57,6 +57,7 @@ export function upsertRecoveryEmail(
     actorPrincipalId: string;
     ip: string;
     userAgent: string;
+    markVerified?: boolean;
   },
 ) {
   const email = input.recoveryEmail.trim().toLowerCase();
@@ -64,13 +65,14 @@ export function upsertRecoveryEmail(
   const now = deps.now();
   const existing = getRecovery(deps.db, input.principalId);
   const changed = existing?.recoveryEmail !== email;
+  const verifiedAt = input.markVerified ? now : changed ? null : (existing?.verifiedAt ?? null);
   deps.db
     .insert(recoveryAccounts)
     .values({
       principalId: input.principalId,
       accountEmail: input.accountEmail,
       recoveryEmail: email,
-      verifiedAt: changed ? null : (existing?.verifiedAt ?? null),
+      verifiedAt,
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     })
@@ -79,12 +81,12 @@ export function upsertRecoveryEmail(
       set: {
         accountEmail: input.accountEmail,
         recoveryEmail: email,
-        verifiedAt: changed ? null : (existing?.verifiedAt ?? null),
+        verifiedAt,
         updatedAt: now,
       },
     })
     .run();
-  if (changed) revokeChallenges(deps, input.principalId, "enroll");
+  if (changed || input.markVerified) revokeChallenges(deps, input.principalId, "enroll");
   writeAudit(deps.db, {
     principalId: input.principalId,
     actorPrincipalId: input.actorPrincipalId,

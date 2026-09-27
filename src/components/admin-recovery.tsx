@@ -91,7 +91,10 @@ export function AdminRecovery({ csrf }: { csrf: string }) {
                     { recoveryEmail: email, accountEmail: selected.email },
                     "PUT",
                   );
-                  setMessage("Saved. Re-verify the email if the address changed.");
+                  const next = { ...selected, recoveryEmail: email, verified: true };
+                  setSelected(next);
+                  setRows((current) => current.map((row) => (row.id === selected.id ? next : row)));
+                  setMessage("Saved. This address is verified and can receive reset codes.");
                 })
               }
             >
