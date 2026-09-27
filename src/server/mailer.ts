@@ -31,8 +31,8 @@ export function createMailer(): Mailer {
       await transport().sendMail({
         from: fromAddress(),
         to,
-        subject: "Mã khôi phục tài khoản",
-        text: `Mã OTP của bạn là ${code}. Mã hết hạn sau ${env.otpTtlMinutes} phút và chỉ dùng một lần.`,
+        subject: "Account recovery code",
+        text: `Your OTP is ${code}. It expires in ${env.otpTtlMinutes} minutes and can only be used once.`,
       });
     },
     async verify() {
@@ -42,19 +42,19 @@ export function createMailer(): Mailer {
       await transport().sendMail({
         from: fromAddress(),
         to,
-        subject: "Thư kiểm tra khôi phục",
-        text: "Kết nối SMTP noreply đang hoạt động.",
+        subject: "Recovery SMTP test",
+        text: "The noreply SMTP connection is working.",
       });
     },
   };
 }
 
 export function mailError(err: unknown) {
-  const message = err instanceof Error ? err.message : "SMTP lỗi";
+  const message = err instanceof Error ? err.message : "SMTP error";
   const env = getEnv();
   return message.replaceAll(env.smtp.password, "[redacted]");
 }
 
 export function smtpFailure(err: unknown): AppError {
-  return new AppError(502, `SMTP lỗi: ${mailError(err)}`);
+  return new AppError(502, `SMTP error: ${mailError(err)}`);
 }

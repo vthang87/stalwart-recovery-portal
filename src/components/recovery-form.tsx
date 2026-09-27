@@ -26,7 +26,7 @@ export function RecoveryForm({
     try {
       await task();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Thất bại");
+      setError(err instanceof Error ? err.message : "Failed");
     } finally {
       setPending(false);
     }
@@ -40,19 +40,19 @@ export function RecoveryForm({
         void run(async () => {
           await postJson("/api/me/recovery", csrf, { recoveryEmail: email }, "PUT");
           setVerified(false);
-          setMessage("Đã lưu email. Hãy gửi mã xác minh.");
+          setMessage("Email saved. Send a verification code.");
         });
       }}
     >
-      <h1>Email khôi phục</h1>
-      <p className="lede">Địa chỉ chưa xác minh không được dùng để đặt lại mật khẩu.</p>
+      <h1>Recovery email</h1>
+      <p className="lede">Unverified addresses cannot be used to reset the password.</p>
       {error ? <div className="alert error">{error}</div> : null}
       {message ? <div className="alert ok">{message}</div> : null}
-      <p>{isVerified ? <span className="status">Đã xác minh</span> : <span className="status">Chưa xác minh</span>}</p>
-      <label htmlFor="recovery">Email khôi phục</label>
+      <p>{isVerified ? <span className="status">Verified</span> : <span className="status">Unverified</span>}</p>
+      <label htmlFor="recovery">Recovery email</label>
       <input id="recovery" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
       <button className="primary" disabled={pending} type="submit">
-        Lưu
+        Save
       </button>
       <button
         className="secondary"
@@ -62,13 +62,13 @@ export function RecoveryForm({
           void run(async () => {
             await postJson("/api/me/recovery", csrf, { recoveryEmail: email }, "PUT");
             await postJson("/api/me/recovery/send-verification", csrf);
-            setMessage("Đã gửi mã OTP tới email khôi phục.");
+            setMessage("OTP sent to the recovery email.");
           })
         }
       >
-        Gửi mã xác minh
+        Send verification code
       </button>
-      <label htmlFor="code">Mã OTP</label>
+      <label htmlFor="code">OTP</label>
       <input id="code" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} />
       <button
         className="primary"
@@ -78,11 +78,11 @@ export function RecoveryForm({
           void run(async () => {
             await postJson("/api/me/recovery/verify", csrf, { code });
             setVerified(true);
-            setMessage("Email khôi phục đã được xác minh.");
+            setMessage("Recovery email verified.");
           })
         }
       >
-        Xác minh
+        Verify
       </button>
     </form>
   );

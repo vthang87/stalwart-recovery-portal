@@ -12,25 +12,25 @@ export default async function HomePage() {
   const verified = Boolean(row?.verifiedAt);
   return (
     <section className="card">
-      <h1>Tài khoản</h1>
+      <h1>Account</h1>
       <p className="lede">{session.email}</p>
       <p>
-        Email khôi phục: {row?.recoveryEmail || "chưa thiết lập"}{" "}
-        {row?.recoveryEmail ? <span className="status">{verified ? "Đã xác minh" : "Chưa xác minh"}</span> : null}
+        Recovery email: {row?.recoveryEmail || "not set"}{" "}
+        {row?.recoveryEmail ? <span className="status">{verified ? "Verified" : "Unverified"}</span> : null}
       </p>
       <div className="grid">
         <Link className="tile" href="/recovery">
-          <strong>Email khôi phục</strong>
-          <span>Thêm, đổi và xác minh địa chỉ nhận OTP.</span>
+          <strong>Recovery email</strong>
+          <span>Add, change, and verify the address that receives OTPs.</span>
         </Link>
         <Link className="tile" href="/password">
-          <strong>Đổi mật khẩu</strong>
-          <span>Cập nhật mật khẩu mailbox trên Stalwart.</span>
+          <strong>Change password</strong>
+          <span>Update the mailbox password on Stalwart.</span>
         </Link>
         {hasRecoveryAdminAccess(session.permissions) ? (
           <Link className="tile" href="/admin/recovery">
-            <strong>Quản trị khôi phục</strong>
-            <span>Chỉ workflow recovery, không quản trị mail.</span>
+            <strong>Recovery admin</strong>
+            <span>Recovery workflow only — not full mail administration.</span>
           </Link>
         ) : null}
       </div>

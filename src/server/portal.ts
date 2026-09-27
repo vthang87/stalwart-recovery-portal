@@ -60,7 +60,7 @@ export function upsertRecoveryEmail(
   },
 ) {
   const email = input.recoveryEmail.trim().toLowerCase();
-  if (!isEmail(email)) throw new AppError(400, "Email khôi phục không hợp lệ.");
+  if (!isEmail(email)) throw new AppError(400, "Invalid recovery email.");
   const now = deps.now();
   const existing = getRecovery(deps.db, input.principalId);
   const changed = existing?.recoveryEmail !== email;
@@ -131,7 +131,7 @@ export async function sendVerification(
   input: { principalId: string; actorPrincipalId: string; ip: string; userAgent: string },
 ) {
   const row = getRecovery(deps.db, input.principalId);
-  if (!row?.recoveryEmail) throw new AppError(400, "Chưa có email khôi phục.");
+  if (!row?.recoveryEmail) throw new AppError(400, "No recovery email set.");
   await issueOtp(deps, {
     principalId: input.principalId,
     purpose: "enroll",
@@ -233,7 +233,7 @@ export async function requestForgot(
     writeAudit(deps.db, {
       principalId: principal.id,
       action: "password_reset_requested",
-      result: err instanceof AppError && err.message.includes("chờ") ? "cooldown" : "send_failed",
+      result: err instanceof AppError && err.message.includes("wait") ? "cooldown" : "send_failed",
       ip: input.ip,
       userAgent: input.userAgent,
       now: deps.now(),
@@ -277,7 +277,7 @@ export async function completeReset(
     challenge.usedAt ||
     challenge.expiresAt < now
   ) {
-    throw new AppError(400, "Phiên đặt lại mật khẩu đã hết hạn.");
+    throw new AppError(400, "Password reset session expired.");
   }
   await deps.resetPassword(input.principalId, input.password);
   deps.db.update(resetChallenges).set({ usedAt: now }).where(eq(resetChallenges.id, challenge.id)).run();
@@ -307,10 +307,10 @@ export async function changePassword(
   const problem = validateNewPassword(input.nextPassword);
   if (problem) throw new AppError(400, problem);
   if (input.currentPassword === input.nextPassword) {
-    throw new AppError(400, "Mật khẩu mới phải khác mật khẩu hiện tại.");
+    throw new AppError(400, "New password must differ from the current password.");
   }
   const auth = await deps.authenticate(input.account, input.currentPassword);
-  if (auth.status !== "ok") throw new AppError(400, "Mật khẩu hiện tại không đúng.");
+  if (auth.status !== "ok") throw new AppError(400, "Current password is incorrect.");
   await deps.changeOwnPassword(input.account, input.currentPassword, input.nextPassword);
   const now = deps.now();
   revokeChallenges(deps, input.principalId, "reset");
@@ -347,7 +347,7 @@ async function issueOtp(
     .orderBy(desc(resetChallenges.createdAt))
     .get();
   if (latest && now - latest.createdAt < env.otpResendCooldownSeconds * 1000) {
-    throw new AppError(429, `Vui lòng chờ ${env.otpResendCooldownSeconds} giây trước khi gửi lại mã.`);
+    throw new AppError(429, `Please wait ${env.otpResendCooldownSeconds} seconds before requesting another code.`);
   }
   const id = newId();
   const code = generateOtp(env.otpLength);
@@ -436,11 +436,11 @@ export async function loginAccount(
 ) {
   const now = deps.now();
   if (isRateLimited(deps.db, `login:ip:${input.ip}`, 10, 15 * 60 * 1000, now)) {
-    throw new AppError(429, "Thử lại sau ít phút.");
+    throw new AppError(429, "Try again in a few minutes.");
   }
   const auth = await deps.authenticate(input.account.trim(), input.password);
   if (auth.status === "mfa") {
-    throw new AppError(401, "Tài khoản yêu cầu MFA của Stalwart. Hoàn tất MFA trên máy chủ thư trước khi đăng nhập.");
+    throw new AppError(401, "This account requires Stalwart MFA. Complete MFA on the mail server before signing in.");
   }
   if (auth.status !== "ok") {
     writeAudit(deps.db, {
@@ -450,10 +450,10 @@ export async function loginAccount(
       userAgent: input.userAgent,
       now,
     });
-    throw new AppError(401, "Tài khoản hoặc mật khẩu không đúng.");
+    throw new AppError(401, "Invalid account or password.");
   }
   const principal = await deps.findUser(input.account.trim());
-  if (!principal) throw new AppError(401, "Tài khoản hoặc mật khẩu không đúng.");
+  if (!principal) throw new AppError(401, "Invalid account or password.");
   const existing = getRecovery(deps.db, principal.id);
   deps.db
     .insert(recoveryAccounts)

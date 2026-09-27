@@ -10,11 +10,11 @@ export async function POST(req: Request) {
   return handle(async () => {
     await requireAnonymousCsrf(req);
     const grant = await readResetGrant();
-    if (!grant) throw new AppError(400, "Phiên đặt lại mật khẩu đã hết hạn.");
+    if (!grant) throw new AppError(400, "Password reset session expired.");
     const body = (await req.json()) as { password?: string; turnstileToken?: string };
     const info = meta(req);
     await verifyTurnstile(body.turnstileToken, info.ip);
-    if (!body.password) return NextResponse.json({ error: "Nhập mật khẩu mới." }, { status: 400 });
+    if (!body.password) return NextResponse.json({ error: "Enter a new password." }, { status: 400 });
     await completeReset(deps(), {
       challengeId: grant.challengeId,
       principalId: grant.principalId,

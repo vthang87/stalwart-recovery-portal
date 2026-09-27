@@ -17,11 +17,11 @@ export function PasswordForm({ csrf }: { csrf: string }) {
     setMessage("");
     try {
       await postJson("/api/password/change", csrf, { currentPassword, nextPassword });
-      setMessage("Đã cập nhật mật khẩu trên Stalwart.");
+      setMessage("Password updated on Stalwart.");
       setCurrent("");
       setNext("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không đổi được mật khẩu");
+      setError(err instanceof Error ? err.message : "Could not change password");
     } finally {
       setPending(false);
     }
@@ -29,16 +29,16 @@ export function PasswordForm({ csrf }: { csrf: string }) {
 
   return (
     <form className="card narrow" onSubmit={onSubmit}>
-      <h1>Đổi mật khẩu</h1>
-      <p className="lede">Mật khẩu mới được ghi trực tiếp vào Stalwart, không lưu trong portal.</p>
+      <h1>Change password</h1>
+      <p className="lede">The new password is written directly to Stalwart and is not stored in this portal.</p>
       {error ? <div className="alert error">{error}</div> : null}
       {message ? <div className="alert ok">{message}</div> : null}
-      <label htmlFor="current">Mật khẩu hiện tại</label>
+      <label htmlFor="current">Current password</label>
       <input id="current" type="password" autoComplete="current-password" value={currentPassword} onChange={(e) => setCurrent(e.target.value)} required />
-      <label htmlFor="next">Mật khẩu mới</label>
+      <label htmlFor="next">New password</label>
       <input id="next" type="password" autoComplete="new-password" value={nextPassword} onChange={(e) => setNext(e.target.value)} required minLength={12} />
       <button className="primary" disabled={pending} type="submit">
-        {pending ? "Đang cập nhật…" : "Đổi mật khẩu"}
+        {pending ? "Updating…" : "Change password"}
       </button>
     </form>
   );

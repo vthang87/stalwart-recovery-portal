@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     const info = meta(req);
     try {
       if (body.to) {
-        if (!isEmail(body.to)) return NextResponse.json({ error: "Email nhận không hợp lệ." }, { status: 400 });
+        if (!isEmail(body.to)) return NextResponse.json({ error: "Invalid recipient email." }, { status: 400 });
         await mailer.sendTest(body.to);
       } else {
         await mailer.verify();

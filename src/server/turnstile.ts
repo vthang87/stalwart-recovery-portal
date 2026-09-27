@@ -18,8 +18,8 @@ export async function verifyTurnstile(token: string | undefined, ip: string) {
   const env = getEnv();
   const mode = turnstileMode(env.turnstileSiteKey, env.turnstileSecretKey);
   if (mode === "off") return;
-  if (mode === "misconfigured") throw new AppError(503, "Chưa cấu hình Cloudflare Turnstile.");
-  if (!token) throw new AppError(400, "Hãy xác nhận bạn không phải robot.");
+  if (mode === "misconfigured") throw new AppError(503, "Cloudflare Turnstile is not configured.");
+  if (!token) throw new AppError(400, "Please confirm you are not a robot.");
   let res: Response;
   try {
     res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
@@ -33,8 +33,8 @@ export async function verifyTurnstile(token: string | undefined, ip: string) {
       signal: AbortSignal.timeout(8000),
     });
   } catch {
-    throw new AppError(503, "Không xác minh được Cloudflare Turnstile.");
+    throw new AppError(503, "Could not verify Cloudflare Turnstile.");
   }
   const body = (await res.json().catch(() => null)) as { success?: boolean } | null;
-  if (!res.ok || !body?.success) throw new AppError(400, "Xác minh Cloudflare không thành công.");
+  if (!res.ok || !body?.success) throw new AppError(400, "Cloudflare verification failed.");
 }

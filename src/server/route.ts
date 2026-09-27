@@ -30,27 +30,27 @@ export async function handle(fn: () => Promise<NextResponse>) {
   } catch (err) {
     if (err instanceof AppError) return NextResponse.json({ error: err.message }, { status: err.status });
     logError("api", err);
-    return NextResponse.json({ error: "Đã có lỗi. Thử lại sau." }, { status: 500 });
+    return NextResponse.json({ error: "Something went wrong. Try again later." }, { status: 500 });
   }
 }
 
 export async function requireUser(req: Request) {
   const session = await getSession();
-  if (!session) throw new AppError(401, "Cần đăng nhập.");
+  if (!session) throw new AppError(401, "Sign-in required.");
   assertCsrf(session.csrf, req);
   return session;
 }
 
 export async function requireAdmin(req: Request) {
   const session = await requireUser(req);
-  if (!hasRecoveryAdminAccess(session.permissions)) throw new AppError(403, "Không có quyền quản trị khôi phục.");
+  if (!hasRecoveryAdminAccess(session.permissions)) throw new AppError(403, "Missing recovery admin permission.");
   return session;
 }
 
 export async function requireAnonymousCsrf(req: Request) {
   const raw = await readCookie(CSRF_COOKIE);
   const token = raw ? open<{ csrf: string; exp: number }>(raw) : null;
-  if (!token || token.exp < Date.now()) throw new AppError(403, "CSRF không hợp lệ");
+  if (!token || token.exp < Date.now()) throw new AppError(403, "Invalid CSRF");
   assertCsrf(token.csrf, req);
   return token.csrf;
 }

@@ -9,7 +9,7 @@ export async function POST(req: Request) {
     const session = await requireUser(req);
     const body = (await req.json()) as { currentPassword?: string; nextPassword?: string };
     if (!body.currentPassword || !body.nextPassword) {
-      return NextResponse.json({ error: "Nhập mật khẩu hiện tại và mật khẩu mới." }, { status: 400 });
+      return NextResponse.json({ error: "Enter the current and new passwords." }, { status: 400 });
     }
     await changePassword(deps(), {
       account: session.email,

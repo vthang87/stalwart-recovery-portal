@@ -102,7 +102,7 @@ export async function requireAdminSession(): Promise<Session> {
 
 export function assertCsrf(expected: string, req: Request) {
   const header = req.headers.get("x-csrf-token") || "";
-  if (!header || !tokensMatch(header, expected)) throw new AppError(403, "CSRF không hợp lệ");
+  if (!header || !tokensMatch(header, expected)) throw new AppError(403, "Invalid CSRF");
 }
 
 export function newCsrf() {

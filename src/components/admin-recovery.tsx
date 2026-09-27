@@ -28,7 +28,7 @@ export function AdminRecovery({ csrf }: { csrf: string }) {
     try {
       await task();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Thất bại");
+      setError(err instanceof Error ? err.message : "Failed");
     } finally {
       setPending(false);
     }
@@ -36,11 +36,11 @@ export function AdminRecovery({ csrf }: { csrf: string }) {
 
   return (
     <section className="card">
-      <h1>Quản trị khôi phục</h1>
-      <p className="lede">Tìm principal trên Stalwart và chỉ quản lý email khôi phục, xác minh, thu hồi OTP.</p>
+      <h1>Recovery admin</h1>
+      <p className="lede">Find a Stalwart principal and manage recovery email, verification, and OTP revocation only.</p>
       {error ? <div className="alert error">{error}</div> : null}
       {message ? <div className="alert ok">{message}</div> : null}
-      <label htmlFor="q">Tìm tài khoản</label>
+      <label htmlFor="q">Find account</label>
       <input id="q" value={query} onChange={(e) => setQuery(e.target.value)} />
       <button
         className="primary"
@@ -52,12 +52,12 @@ export function AdminRecovery({ csrf }: { csrf: string }) {
               headers: { "x-csrf-token": csrf },
             });
             const data = (await res.json()) as { principals?: Principal[]; error?: string };
-            if (!res.ok) throw new Error(data.error || "Không tìm được");
+            if (!res.ok) throw new Error(data.error || "Not found");
             setRows(data.principals || []);
           })
         }
       >
-        Tìm
+        Search
       </button>
       <div className="list">
         {rows.map((row) => (
@@ -69,14 +69,14 @@ export function AdminRecovery({ csrf }: { csrf: string }) {
               setEmail(row.recoveryEmail || "");
             }}
           >
-            {row.email} {row.verified ? "· đã xác minh" : ""}
+            {row.email} {row.verified ? "· verified" : ""}
           </button>
         ))}
       </div>
       {selected ? (
         <div>
           <h2>{selected.email}</h2>
-          <label htmlFor="recovery">Email khôi phục</label>
+          <label htmlFor="recovery">Recovery email</label>
           <input id="recovery" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
           <div>
             <button
@@ -91,11 +91,11 @@ export function AdminRecovery({ csrf }: { csrf: string }) {
                     { recoveryEmail: email, accountEmail: selected.email },
                     "PUT",
                   );
-                  setMessage("Đã lưu. Email cần xác minh lại nếu địa chỉ thay đổi.");
+                  setMessage("Saved. Re-verify the email if the address changed.");
                 })
               }
             >
-              Lưu
+              Save
             </button>
             <button
               className="secondary"
@@ -104,11 +104,11 @@ export function AdminRecovery({ csrf }: { csrf: string }) {
               onClick={() =>
                 void run(async () => {
                   await postJson(`/api/admin/recovery/${encodeURIComponent(selected.id)}/send-verification`, csrf);
-                  setMessage("Đã gửi lại mã xác minh.");
+                  setMessage("Verification code resent.");
                 })
               }
             >
-              Gửi xác minh
+              Send verification
             </button>
             <button
               className="secondary"
@@ -117,11 +117,11 @@ export function AdminRecovery({ csrf }: { csrf: string }) {
               onClick={() =>
                 void run(async () => {
                   await postJson(`/api/admin/recovery/${encodeURIComponent(selected.id)}/revoke-challenges`, csrf);
-                  setMessage("Đã thu hồi các mã còn hiệu lực.");
+                  setMessage("Active codes revoked.");
                 })
               }
             >
-              Thu hồi OTP
+              Revoke OTP
             </button>
             <button
               className="secondary"
@@ -131,11 +131,11 @@ export function AdminRecovery({ csrf }: { csrf: string }) {
                 void run(async () => {
                   await postJson(`/api/admin/recovery/${encodeURIComponent(selected.id)}`, csrf, undefined, "DELETE");
                   setEmail("");
-                  setMessage("Đã xóa email khôi phục.");
+                  setMessage("Recovery email removed.");
                 })
               }
             >
-              Xóa
+              Remove
             </button>
           </div>
         </div>

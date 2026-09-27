@@ -17,7 +17,7 @@ export function LoginForm({ siteKey }: { siteKey: string }) {
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
-    loadCsrf().then(setCsrf).catch(() => setError("Không tải được phiên làm việc."));
+    loadCsrf().then(setCsrf).catch(() => setError("Could not load session."));
   }, []);
 
   async function onSubmit(event: React.FormEvent) {
@@ -31,7 +31,7 @@ export function LoginForm({ siteKey }: { siteKey: string }) {
     } catch (err) {
       setTurnstileToken("");
       setResetSignal((value) => value + 1);
-      setError(err instanceof Error ? err.message : "Đăng nhập thất bại");
+      setError(err instanceof Error ? err.message : "Sign-in failed");
     } finally {
       setPending(false);
     }
@@ -39,19 +39,19 @@ export function LoginForm({ siteKey }: { siteKey: string }) {
 
   return (
     <form className="card narrow" onSubmit={onSubmit}>
-      <h1>Đăng nhập</h1>
-      <p className="lede">Dùng tài khoản mailbox trên Stalwart. Portal không lưu mật khẩu.</p>
+      <h1>Sign in</h1>
+      <p className="lede">Use your Stalwart mailbox account. This portal does not store passwords.</p>
       {error ? <div className="alert error">{error}</div> : null}
-      <label htmlFor="account">Tài khoản</label>
+      <label htmlFor="account">Account</label>
       <input id="account" autoComplete="username" value={account} onChange={(e) => setAccount(e.target.value)} required />
-      <label htmlFor="password">Mật khẩu</label>
+      <label htmlFor="password">Password</label>
       <input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
       <Turnstile siteKey={siteKey} resetSignal={resetSignal} onToken={setTurnstileToken} />
       <button className="primary" disabled={pending || !csrf || (Boolean(siteKey) && !turnstileToken)} type="submit">
-        {pending ? "Đang đăng nhập…" : "Đăng nhập"}
+        {pending ? "Signing in…" : "Sign in"}
       </button>
       <p className="lede">
-        <Link href="/forgot-password">Quên mật khẩu</Link>
+        <Link href="/forgot-password">Forgot password</Link>
       </p>
     </form>
   );

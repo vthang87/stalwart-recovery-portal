@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     const info = meta(req);
     await verifyTurnstile(body.turnstileToken, info.ip);
     if (!body.account || !body.code) {
-      return NextResponse.json({ error: "Nhập tài khoản và mã OTP." }, { status: 400 });
+      return NextResponse.json({ error: "Enter account and OTP." }, { status: 400 });
     }
     const grant = await verifyResetOtp(deps(), {
       account: body.account,

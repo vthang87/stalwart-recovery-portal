@@ -9,7 +9,7 @@ export async function postJson(url: string, csrf: string, body?: unknown, method
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const data = (await res.json().catch(() => ({}))) as { error?: string; message?: string; ok?: boolean; csrf?: string };
-  if (!res.ok) throw new Error(data.error || "Yêu cầu thất bại");
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
   return data;
 }
 

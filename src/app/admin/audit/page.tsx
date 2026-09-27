@@ -10,14 +10,14 @@ export default async function AuditPage() {
     <>
       <AdminNav />
       <section className="card">
-        <h1>Nhật ký</h1>
-        <p className="lede">Không ghi mật khẩu, OTP hay bí mật SMTP.</p>
+        <h1>Audit log</h1>
+        <p className="lede">Passwords, OTPs, and SMTP secrets are not logged.</p>
         <table>
           <thead>
             <tr>
-              <th>Thời điểm</th>
-              <th>Hành động</th>
-              <th>Kết quả</th>
+              <th>Time</th>
+              <th>Action</th>
+              <th>Result</th>
               <th>Principal</th>
               <th>IP</th>
             </tr>
@@ -25,7 +25,7 @@ export default async function AuditPage() {
           <tbody>
             {logs.map((row) => (
               <tr key={row.id}>
-                <td>{new Date(row.createdAt).toLocaleString("vi-VN")}</td>
+                <td>{new Date(row.createdAt).toLocaleString("en-US")}</td>
                 <td>{row.action}</td>
                 <td>{row.result}</td>
                 <td>{row.principalId || "—"}</td>

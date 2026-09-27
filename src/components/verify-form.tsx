@@ -18,7 +18,7 @@ function VerifyInner({ siteKey }: { siteKey: string }) {
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
-    loadCsrf().then(setCsrf).catch(() => setError("Không tải được phiên làm việc."));
+    loadCsrf().then(setCsrf).catch(() => setError("Could not load session."));
   }, []);
 
   async function onSubmit(event: React.FormEvent) {
@@ -31,7 +31,7 @@ function VerifyInner({ siteKey }: { siteKey: string }) {
     } catch (err) {
       setTurnstileToken("");
       setResetSignal((value) => value + 1);
-      setError(err instanceof Error ? err.message : "Mã không hợp lệ");
+      setError(err instanceof Error ? err.message : "Invalid code");
     } finally {
       setPending(false);
     }
@@ -39,16 +39,16 @@ function VerifyInner({ siteKey }: { siteKey: string }) {
 
   return (
     <form className="card narrow" onSubmit={onSubmit}>
-      <h1>Nhập mã OTP</h1>
-      <p className="lede">Mã có hiệu lực trong thời gian ngắn và chỉ dùng một lần.</p>
+      <h1>Enter OTP</h1>
+      <p className="lede">The code is short-lived and can only be used once.</p>
       {error ? <div className="alert error">{error}</div> : null}
-      <label htmlFor="account">Tài khoản</label>
+      <label htmlFor="account">Account</label>
       <input id="account" value={account} onChange={(e) => setAccount(e.target.value)} required />
-      <label htmlFor="code">Mã OTP</label>
+      <label htmlFor="code">OTP</label>
       <input id="code" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} required />
       <Turnstile siteKey={siteKey} resetSignal={resetSignal} onToken={setTurnstileToken} />
       <button className="primary" disabled={pending || !csrf || (Boolean(siteKey) && !turnstileToken)} type="submit">
-        Xác minh
+        Verify
       </button>
     </form>
   );

@@ -1,7 +1,7 @@
 export const FORGOT_MESSAGE =
-  "Nếu tài khoản có email khôi phục đã xác minh, chúng tôi đã gửi mã OTP.";
+  "If this account has a verified recovery email, we sent an OTP.";
 
-export const OTP_INVALID_MESSAGE = "Mã OTP không hợp lệ hoặc đã hết hạn.";
+export const OTP_INVALID_MESSAGE = "Invalid or expired OTP.";
 
 export class AppError extends Error {
   constructor(
@@ -22,8 +22,8 @@ export function isEmail(value: string) {
 }
 
 export function validateNewPassword(password: string): string | null {
-  if (password.length < 12) return "Mật khẩu mới cần ít nhất 12 ký tự.";
-  if (password.length > 256) return "Mật khẩu quá dài.";
+  if (password.length < 12) return "New password must be at least 12 characters.";
+  if (password.length > 256) return "Password is too long.";
   return null;
 }
 

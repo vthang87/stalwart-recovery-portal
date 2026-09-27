@@ -16,7 +16,7 @@ export function ForgotForm({ siteKey }: { siteKey: string }) {
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
-    loadCsrf().then(setCsrf).catch(() => setError("Không tải được phiên làm việc."));
+    loadCsrf().then(setCsrf).catch(() => setError("Could not load session."));
   }, []);
 
   async function onSubmit(event: React.FormEvent) {
@@ -25,12 +25,12 @@ export function ForgotForm({ siteKey }: { siteKey: string }) {
     setError("");
     try {
       const data = await postJson("/api/password/forgot", csrf, { account, turnstileToken });
-      setMessage(data.message || "Nếu tài khoản có email khôi phục đã xác minh, chúng tôi đã gửi mã OTP.");
+      setMessage(data.message || "If this account has a verified recovery email, we sent an OTP.");
       router.push(`/verify?account=${encodeURIComponent(account)}`);
     } catch (err) {
       setTurnstileToken("");
       setResetSignal((value) => value + 1);
-      setError(err instanceof Error ? err.message : "Không gửi được yêu cầu");
+      setError(err instanceof Error ? err.message : "Could not submit request");
     } finally {
       setPending(false);
     }
@@ -38,15 +38,15 @@ export function ForgotForm({ siteKey }: { siteKey: string }) {
 
   return (
     <form className="card narrow" onSubmit={onSubmit}>
-      <h1>Quên mật khẩu</h1>
-      <p className="lede">Nhập tài khoản mailbox. Phản hồi luôn giống nhau để không lộ tài khoản có tồn tại hay không.</p>
+      <h1>Forgot password</h1>
+      <p className="lede">Enter your mailbox account. The response is always the same so account existence is not revealed.</p>
       {error ? <div className="alert error">{error}</div> : null}
       {message ? <div className="alert ok">{message}</div> : null}
-      <label htmlFor="account">Tài khoản</label>
+      <label htmlFor="account">Account</label>
       <input id="account" autoComplete="username" value={account} onChange={(e) => setAccount(e.target.value)} required />
       <Turnstile siteKey={siteKey} resetSignal={resetSignal} onToken={setTurnstileToken} />
       <button className="primary" disabled={pending || !csrf || (Boolean(siteKey) && !turnstileToken)} type="submit">
-        Gửi mã OTP
+        Send OTP
       </button>
     </form>
   );

@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     const info = meta(req);
     await verifyTurnstile(body.turnstileToken, info.ip);
     if (!body.account || !body.password) {
-      return NextResponse.json({ error: "Nhập tài khoản và mật khẩu." }, { status: 400 });
+      return NextResponse.json({ error: "Enter account and password." }, { status: 400 });
     }
     const result = await loginAccount(deps(), {
       account: body.account,

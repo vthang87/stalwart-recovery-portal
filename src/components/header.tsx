@@ -19,15 +19,15 @@ export function Header({ appName, email, isAdmin }: { appName: string; email?: s
       <nav className="nav">
         {email ? (
           <>
-            <Link href="/">Tài khoản</Link>
-            {isAdmin ? <Link href="/admin/recovery">Quản trị</Link> : null}
+            <Link href="/">Account</Link>
+            {isAdmin ? <Link href="/admin/recovery">Admin</Link> : null}
             <span>{email}</span>
             <button type="button" onClick={logout}>
-              Đăng xuất
+              Sign out
             </button>
           </>
         ) : (
-          <Link href="/login">Đăng nhập</Link>
+          <Link href="/login">Sign in</Link>
         )}
       </nav>
     </header>

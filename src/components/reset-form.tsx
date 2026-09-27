@@ -16,13 +16,13 @@ export function ResetForm({ siteKey }: { siteKey: string }) {
   const [pending, setPending] = useState(false);
 
   useEffect(() => {
-    loadCsrf().then(setCsrf).catch(() => setError("Không tải được phiên làm việc."));
+    loadCsrf().then(setCsrf).catch(() => setError("Could not load session."));
   }, []);
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (password !== confirm) {
-      setError("Mật khẩu nhập lại không khớp.");
+      setError("Passwords do not match.");
       return;
     }
     setPending(true);
@@ -33,7 +33,7 @@ export function ResetForm({ siteKey }: { siteKey: string }) {
     } catch (err) {
       setTurnstileToken("");
       setResetSignal((value) => value + 1);
-      setError(err instanceof Error ? err.message : "Không đặt lại được mật khẩu");
+      setError(err instanceof Error ? err.message : "Could not reset password");
     } finally {
       setPending(false);
     }
@@ -41,16 +41,16 @@ export function ResetForm({ siteKey }: { siteKey: string }) {
 
   return (
     <form className="card narrow" onSubmit={onSubmit}>
-      <h1>Mật khẩu mới</h1>
-      <p className="lede">Mật khẩu được cập nhật trên Stalwart. Sau đó đăng nhập lại.</p>
+      <h1>New password</h1>
+      <p className="lede">The password is updated on Stalwart. Sign in again afterward.</p>
       {error ? <div className="alert error">{error}</div> : null}
-      <label htmlFor="password">Mật khẩu mới</label>
+      <label htmlFor="password">New password</label>
       <input id="password" type="password" autoComplete="new-password" minLength={12} value={password} onChange={(e) => setPassword(e.target.value)} required />
-      <label htmlFor="confirm">Nhập lại</label>
+      <label htmlFor="confirm">Confirm</label>
       <input id="confirm" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
       <Turnstile siteKey={siteKey} resetSignal={resetSignal} onToken={setTurnstileToken} />
       <button className="primary" disabled={pending || !csrf || (Boolean(siteKey) && !turnstileToken)} type="submit">
-        Đặt lại mật khẩu
+        Reset password
       </button>
     </form>
   );
