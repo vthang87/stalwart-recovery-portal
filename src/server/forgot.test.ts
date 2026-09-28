@@ -19,6 +19,7 @@ function mailer(): Mailer & { sent: string[] } {
     async sendOtp(to) {
       sent.push(to);
     },
+    async sendResetLink() {},
     async verify() {},
     async sendTest() {},
   };

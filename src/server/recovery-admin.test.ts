@@ -5,7 +5,7 @@ import type { Mailer } from "@/server/mailer";
 import { upsertRecoveryEmail, type PortalDeps } from "@/server/portal";
 
 function deps(db: AppDatabase): PortalDeps {
-  const mailer: Mailer = { async sendOtp() {}, async verify() {}, async sendTest() {} };
+  const mailer: Mailer = { async sendOtp() {}, async sendResetLink() {}, async verify() {}, async sendTest() {} };
   return {
     db,
     mailer,

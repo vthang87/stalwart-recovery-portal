@@ -1,9 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { MailCheck } from "lucide-react";
+import { Notice } from "@/components/notice";
 import { Turnstile } from "@/components/turnstile";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { loadCsrf, postJson } from "@/lib/client";
 
 function VerifyInner({ siteKey }: { siteKey: string }) {
@@ -38,19 +43,30 @@ function VerifyInner({ siteKey }: { siteKey: string }) {
   }
 
   return (
-    <form className="card narrow" onSubmit={onSubmit}>
-      <h1>Enter OTP</h1>
-      <p className="lede">The code is short-lived and can only be used once.</p>
-      {error ? <div className="alert error">{error}</div> : null}
-      <label htmlFor="account">Account</label>
-      <input id="account" value={account} onChange={(e) => setAccount(e.target.value)} required />
-      <label htmlFor="code">OTP</label>
-      <input id="code" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} required />
-      <Turnstile siteKey={siteKey} resetSignal={resetSignal} onToken={setTurnstileToken} />
-      <button className="primary" disabled={pending || !csrf || (Boolean(siteKey) && !turnstileToken)} type="submit">
-        Verify
-      </button>
-    </form>
+    <Card className="mx-auto w-full max-w-md">
+      <CardHeader>
+        <CardTitle>Enter OTP</CardTitle>
+        <CardDescription>The code is short-lived and can only be used once.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form className="grid gap-4" onSubmit={onSubmit}>
+          <Notice error={error} />
+          <div className="grid gap-2">
+            <Label htmlFor="account">Account</Label>
+            <Input id="account" value={account} onChange={(e) => setAccount(e.target.value)} required />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="code">OTP</Label>
+            <Input id="code" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value)} required />
+          </div>
+          <Turnstile siteKey={siteKey} resetSignal={resetSignal} onToken={setTurnstileToken} />
+          <Button disabled={pending || !csrf || (Boolean(siteKey) && !turnstileToken)} type="submit">
+            <MailCheck data-icon="inline-start" />
+            Verify
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 

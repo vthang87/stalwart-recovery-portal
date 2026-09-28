@@ -3,8 +3,8 @@ import { writeAudit } from "@/server/audit";
 import { recoveryAccounts, resetChallenges, type AppDatabase } from "@/server/db";
 import { getEnv } from "@/server/env";
 import { AppError, FORGOT_MESSAGE, OTP_INVALID_MESSAGE, isEmail, validateNewPassword } from "@/server/http";
-import type { Mailer } from "@/server/mailer";
-import { generateOtp, hashOtp, newId, otpMatches } from "@/server/otp";
+import { smtpFailure, type Mailer } from "@/server/mailer";
+import { generateOtp, generateResetSecret, hashOtp, newId, otpMatches } from "@/server/otp";
 import { isRateLimited } from "@/server/rate-limit";
 import { compactSessionPermissions } from "@/server/authz";
 import {
@@ -40,8 +40,25 @@ export function defaultDeps(db: AppDatabase, mailer: Mailer): PortalDeps {
   };
 }
 
+const RESET_LINK_TTL_MS = 60 * 60 * 1000;
+
 function pepper() {
   return getEnv().sessionSecret;
+}
+
+function resetLinkUrl(token: string) {
+  const env = getEnv();
+  return `${env.appUrl}${env.basePath}/reset-password?token=${encodeURIComponent(token)}`;
+}
+
+function parseResetToken(token: string) {
+  const value = token.trim();
+  const dot = value.indexOf(".");
+  if (dot < 8 || dot > 64) return null;
+  const id = value.slice(0, dot);
+  const secret = value.slice(dot + 1);
+  if (!/^[a-f0-9]+$/i.test(id) || secret.length < 20 || secret.length > 128) return null;
+  return { id, secret };
 }
 
 export function getRecovery(db: AppDatabase, principalId: string) {
@@ -287,6 +304,107 @@ export async function completeReset(
   writeAudit(deps.db, {
     principalId: input.principalId,
     actorPrincipalId: input.principalId,
+    action: "password_reset",
+    result: "ok",
+    ip: input.ip,
+    userAgent: input.userAgent,
+    now,
+  });
+}
+
+export async function sendAdminResetLink(
+  deps: PortalDeps,
+  input: { principalId: string; actorPrincipalId: string; ip: string; userAgent: string },
+) {
+  const recovery = getRecovery(deps.db, input.principalId);
+  if (!recovery?.recoveryEmail || !recovery.verifiedAt) {
+    throw new AppError(400, "Set a backup email before sending a reset link.");
+  }
+  const env = getEnv();
+  const now = deps.now();
+  const latest = deps.db
+    .select()
+    .from(resetChallenges)
+    .where(and(eq(resetChallenges.principalId, input.principalId), eq(resetChallenges.purpose, "reset-link")))
+    .orderBy(desc(resetChallenges.createdAt))
+    .get();
+  if (latest && now - latest.createdAt < env.otpResendCooldownSeconds * 1000) {
+    throw new AppError(429, `Please wait ${env.otpResendCooldownSeconds} seconds before sending another reset link.`);
+  }
+  const id = newId();
+  const secret = generateResetSecret();
+  const expiresMinutes = RESET_LINK_TTL_MS / 60_000;
+  revokeChallenges(deps, input.principalId, "reset-link");
+  deps.db
+    .insert(resetChallenges)
+    .values({
+      id,
+      principalId: input.principalId,
+      purpose: "reset-link",
+      secretHash: hashOtp(secret, id, pepper()),
+      recoveryEmail: recovery.recoveryEmail,
+      expiresAt: now + RESET_LINK_TTL_MS,
+      attempts: 0,
+      requestIp: input.ip,
+      createdAt: now,
+    })
+    .run();
+  try {
+    await deps.mailer.sendResetLink(recovery.recoveryEmail, recovery.accountEmail, resetLinkUrl(`${id}.${secret}`), expiresMinutes);
+  } catch (err) {
+    deps.db.delete(resetChallenges).where(eq(resetChallenges.id, id)).run();
+    writeAudit(deps.db, {
+      principalId: input.principalId,
+      actorPrincipalId: input.actorPrincipalId,
+      action: "admin.password_reset_link",
+      result: "smtp_failed",
+      ip: input.ip,
+      userAgent: input.userAgent,
+      now,
+    });
+    throw smtpFailure(err);
+  }
+  writeAudit(deps.db, {
+    principalId: input.principalId,
+    actorPrincipalId: input.actorPrincipalId,
+    action: "admin.password_reset_link",
+    result: "sent",
+    ip: input.ip,
+    userAgent: input.userAgent,
+    now,
+  });
+  return { sentTo: recovery.recoveryEmail };
+}
+
+export async function completeResetFromLink(
+  deps: PortalDeps,
+  input: { token: string; password: string; ip: string; userAgent: string },
+) {
+  const problem = validateNewPassword(input.password);
+  if (problem) throw new AppError(400, problem);
+  const now = deps.now();
+  if (isRateLimited(deps.db, `reset-link:ip:${input.ip}`, 10, 15 * 60 * 1000, now)) {
+    throw new AppError(429, "Try again in a few minutes.");
+  }
+  const parsed = parseResetToken(input.token);
+  const invalid = new AppError(400, "This reset link is invalid or expired.");
+  if (!parsed) throw invalid;
+  const challenge = deps.db.select().from(resetChallenges).where(eq(resetChallenges.id, parsed.id)).get();
+  if (
+    !challenge ||
+    challenge.purpose !== "reset-link" ||
+    challenge.usedAt ||
+    challenge.expiresAt < now ||
+    !otpMatches(parsed.secret, parsed.id, pepper(), challenge.secretHash)
+  ) {
+    throw invalid;
+  }
+  await deps.resetPassword(challenge.principalId, input.password);
+  deps.db.update(resetChallenges).set({ usedAt: now }).where(eq(resetChallenges.id, challenge.id)).run();
+  revokeChallenges(deps, challenge.principalId);
+  writeAudit(deps.db, {
+    principalId: challenge.principalId,
+    actorPrincipalId: challenge.principalId,
     action: "password_reset",
     result: "ok",
     ip: input.ip,

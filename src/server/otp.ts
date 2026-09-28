@@ -19,3 +19,7 @@ export function otpMatches(otp: string, challengeId: string, pepper: string, exp
 export function newId(): string {
   return randomBytes(16).toString("hex");
 }
+
+export function generateResetSecret(): string {
+  return randomBytes(32).toString("base64url");
+}

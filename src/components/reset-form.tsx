@@ -2,10 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { KeyRound } from "lucide-react";
+import { Notice } from "@/components/notice";
 import { Turnstile } from "@/components/turnstile";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { loadCsrf, postJson } from "@/lib/client";
 
-export function ResetForm({ siteKey, minLength }: { siteKey: string; minLength: number }) {
+export function ResetForm({ siteKey, minLength, token = "" }: { siteKey: string; minLength: number; token?: string }) {
   const router = useRouter();
   const [csrf, setCsrf] = useState("");
   const [password, setPassword] = useState("");
@@ -28,7 +34,7 @@ export function ResetForm({ siteKey, minLength }: { siteKey: string; minLength: 
     setPending(true);
     setError("");
     try {
-      await postJson("/api/password/reset", csrf, { password, turnstileToken });
+      await postJson("/api/password/reset", csrf, { password, turnstileToken, token: token || undefined });
       router.push("/login");
     } catch (err) {
       setTurnstileToken("");
@@ -40,18 +46,33 @@ export function ResetForm({ siteKey, minLength }: { siteKey: string; minLength: 
   }
 
   return (
-    <form className="card narrow" onSubmit={onSubmit}>
-      <h1>New password</h1>
-      <p className="lede">The password is updated on Stalwart. Sign in again afterward.</p>
-      {error ? <div className="alert error">{error}</div> : null}
-      <label htmlFor="password">New password</label>
-      <input id="password" type="password" autoComplete="new-password" minLength={minLength} value={password} onChange={(e) => setPassword(e.target.value)} required />
-      <label htmlFor="confirm">Confirm</label>
-      <input id="confirm" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
-      <Turnstile siteKey={siteKey} resetSignal={resetSignal} onToken={setTurnstileToken} />
-      <button className="primary" disabled={pending || !csrf || (Boolean(siteKey) && !turnstileToken)} type="submit">
-        Reset password
-      </button>
-    </form>
+    <Card className="mx-auto w-full max-w-md">
+      <CardHeader>
+        <CardTitle>New password</CardTitle>
+        <CardDescription>
+          {token
+            ? "This link works once. The password is updated on Stalwart, then sign in again."
+            : "The password is updated on Stalwart. Sign in again afterward."}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form className="grid gap-4" onSubmit={onSubmit}>
+          <Notice error={error} />
+          <div className="grid gap-2">
+            <Label htmlFor="password">New password</Label>
+            <Input id="password" type="password" autoComplete="new-password" minLength={minLength} value={password} onChange={(e) => setPassword(e.target.value)} required />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="confirm">Confirm</Label>
+            <Input id="confirm" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required />
+          </div>
+          <Turnstile siteKey={siteKey} resetSignal={resetSignal} onToken={setTurnstileToken} />
+          <Button disabled={pending || !csrf || (Boolean(siteKey) && !turnstileToken)} type="submit">
+            <KeyRound data-icon="inline-start" />
+            Reset password
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

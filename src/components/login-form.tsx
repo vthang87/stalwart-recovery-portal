@@ -3,8 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { loadCsrf, postJson } from "@/lib/client";
+import { LogIn } from "lucide-react";
+import { Notice } from "@/components/notice";
 import { Turnstile } from "@/components/turnstile";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { loadCsrf, postJson } from "@/lib/client";
 
 export function LoginForm({ siteKey }: { siteKey: string }) {
   const router = useRouter();
@@ -38,21 +44,32 @@ export function LoginForm({ siteKey }: { siteKey: string }) {
   }
 
   return (
-    <form className="card narrow" onSubmit={onSubmit}>
-      <h1>Sign in</h1>
-      <p className="lede">Use your Stalwart mailbox account. This portal does not store passwords.</p>
-      {error ? <div className="alert error">{error}</div> : null}
-      <label htmlFor="account">Account</label>
-      <input id="account" autoComplete="username" value={account} onChange={(e) => setAccount(e.target.value)} required />
-      <label htmlFor="password">Password</label>
-      <input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-      <Turnstile siteKey={siteKey} resetSignal={resetSignal} onToken={setTurnstileToken} />
-      <button className="primary" disabled={pending || !csrf || (Boolean(siteKey) && !turnstileToken)} type="submit">
-        {pending ? "Signing in…" : "Sign in"}
-      </button>
-      <p className="lede">
-        <Link href="/forgot-password">Forgot password</Link>
-      </p>
-    </form>
+    <Card className="mx-auto w-full max-w-md">
+      <CardHeader>
+        <CardTitle>Sign in</CardTitle>
+        <CardDescription>Use your Stalwart mailbox account. This portal does not store passwords.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form className="grid gap-4" onSubmit={onSubmit}>
+          <Notice error={error} />
+          <div className="grid gap-2">
+            <Label htmlFor="account">Account</Label>
+            <Input id="account" autoComplete="username" value={account} onChange={(e) => setAccount(e.target.value)} required />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="password">Password</Label>
+            <Input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          </div>
+          <Turnstile siteKey={siteKey} resetSignal={resetSignal} onToken={setTurnstileToken} />
+          <Button disabled={pending || !csrf || (Boolean(siteKey) && !turnstileToken)} type="submit">
+            <LogIn data-icon="inline-start" />
+            {pending ? "Signing in…" : "Sign in"}
+          </Button>
+          <Button variant="link" className="h-auto justify-start px-0" asChild>
+            <Link href="/forgot-password">Forgot password</Link>
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

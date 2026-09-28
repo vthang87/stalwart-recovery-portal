@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Send } from "lucide-react";
+import { Notice } from "@/components/notice";
 import { Turnstile } from "@/components/turnstile";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { loadCsrf, postJson } from "@/lib/client";
 
 export function ForgotForm({ siteKey }: { siteKey: string }) {
@@ -37,17 +43,25 @@ export function ForgotForm({ siteKey }: { siteKey: string }) {
   }
 
   return (
-    <form className="card narrow" onSubmit={onSubmit}>
-      <h1>Forgot password</h1>
-      <p className="lede">Enter your mailbox account. The response is always the same so account existence is not revealed.</p>
-      {error ? <div className="alert error">{error}</div> : null}
-      {message ? <div className="alert ok">{message}</div> : null}
-      <label htmlFor="account">Account</label>
-      <input id="account" autoComplete="username" value={account} onChange={(e) => setAccount(e.target.value)} required />
-      <Turnstile siteKey={siteKey} resetSignal={resetSignal} onToken={setTurnstileToken} />
-      <button className="primary" disabled={pending || !csrf || (Boolean(siteKey) && !turnstileToken)} type="submit">
-        Send OTP
-      </button>
-    </form>
+    <Card className="mx-auto w-full max-w-md">
+      <CardHeader>
+        <CardTitle>Forgot password</CardTitle>
+        <CardDescription>Enter your mailbox account. The response is always the same so account existence is not revealed.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form className="grid gap-4" onSubmit={onSubmit}>
+          <Notice error={error} message={message} />
+          <div className="grid gap-2">
+            <Label htmlFor="account">Account</Label>
+            <Input id="account" autoComplete="username" value={account} onChange={(e) => setAccount(e.target.value)} required />
+          </div>
+          <Turnstile siteKey={siteKey} resetSignal={resetSignal} onToken={setTurnstileToken} />
+          <Button disabled={pending || !csrf || (Boolean(siteKey) && !turnstileToken)} type="submit">
+            <Send data-icon="inline-start" />
+            Send OTP
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

@@ -53,7 +53,7 @@ export function Turnstile({
         strategy="afterInteractive"
         onLoad={() => setReady(true)}
       />
-      <div ref={host} className="turnstile" />
+      <div ref={host} className="mt-1" />
     </>
   );
 }

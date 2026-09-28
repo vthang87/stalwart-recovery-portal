@@ -1,6 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { KeyRound } from "lucide-react";
+import { Notice } from "@/components/notice";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { postJson } from "@/lib/client";
 
 export function PasswordForm({ csrf, minLength }: { csrf: string; minLength: number }) {
@@ -28,18 +34,28 @@ export function PasswordForm({ csrf, minLength }: { csrf: string; minLength: num
   }
 
   return (
-    <form className="card narrow" onSubmit={onSubmit}>
-      <h1>Change password</h1>
-      <p className="lede">The new password is written directly to Stalwart and is not stored in this portal.</p>
-      {error ? <div className="alert error">{error}</div> : null}
-      {message ? <div className="alert ok">{message}</div> : null}
-      <label htmlFor="current">Current password</label>
-      <input id="current" type="password" autoComplete="current-password" value={currentPassword} onChange={(e) => setCurrent(e.target.value)} required />
-      <label htmlFor="next">New password</label>
-      <input id="next" type="password" autoComplete="new-password" value={nextPassword} onChange={(e) => setNext(e.target.value)} required minLength={minLength} />
-      <button className="primary" disabled={pending} type="submit">
-        {pending ? "Updating…" : "Change password"}
-      </button>
-    </form>
+    <Card className="mx-auto w-full max-w-md">
+      <CardHeader>
+        <CardTitle>Change password</CardTitle>
+        <CardDescription>The new password is written directly to Stalwart and is not stored in this portal.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form className="grid gap-4" onSubmit={onSubmit}>
+          <Notice error={error} message={message} />
+          <div className="grid gap-2">
+            <Label htmlFor="current">Current password</Label>
+            <Input id="current" type="password" autoComplete="current-password" value={currentPassword} onChange={(e) => setCurrent(e.target.value)} required />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="next">New password</Label>
+            <Input id="next" type="password" autoComplete="new-password" value={nextPassword} onChange={(e) => setNext(e.target.value)} required minLength={minLength} />
+          </div>
+          <Button disabled={pending} type="submit">
+            <KeyRound data-icon="inline-start" />
+            {pending ? "Updating…" : "Change password"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
